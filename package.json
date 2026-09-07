@@ -1,0 +1,20 @@
+{
+  "name": "pulsar",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Pulsar v0 — millisecond game moves off-chain, final result on Stellar Testnet.",
+  "packageManager": "pnpm@11.0.9",
+  "scripts": {
+    "test": "pnpm -r --if-present test",
+    "build": "pnpm -r --if-present build",
+    "demo": "./scripts/demo.sh"
+  },
+  "devDependencies": {
+    "@stellar/stellar-sdk": "^16.0.1",
+    "@types/node": "^22.0.0",
+    "typescript": "^5.6.0"
+  },
+  "pnpm": {
+    "onlyBuiltDependencies": ["esbuild"]
+  }
+}

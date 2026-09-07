@@ -1,0 +1,26 @@
+# Rust / Soroban
+target/
+contracts/**/target/
+contracts/**/test_snapshots/
+*.wasm
+
+# Node
+node_modules/
+.next/
+dist/
+.turbo/
+*.tsbuildinfo
+
+# Secrets & local state (never commit)
+.env
+.env.local
+.env.*.local
+
+# stellar-cli local state
+.stellar/
+
+# Internal author notes (not part of the public repo): build spec for an AI,
+# grant pitch, and the kickoff prompt. Keep them out of the public history.
+AGENT.md
+INSTAWARD.md
+PROMPT.md
