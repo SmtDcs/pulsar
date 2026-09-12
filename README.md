@@ -9,6 +9,8 @@ Tic-tac-toe is the demo game. Run the same game in two modes and feel the differ
 
 The contrast is the point. Stellar closes a ledger roughly every 5 seconds, which is fine for payments and unusable for interactive apps. Pulsar borrows the idea from Solana's MagicBlock: run the session off-chain, settle the result on L1.
 
+Why build this here: MagicBlock proved the model on Solana. Stellar has all the pieces Soroban contracts need for it — contract auth, fee-bumping, fast finality — but nobody has put them together yet. The aim is to be to Stellar what MagicBlock is to Solana. v0 is the tic-tac-toe proof of that idea; the trust layer that turns it into a platform is v1–v4 below.
+
 It is a small, honest prototype. No L2, no token, no relayers, no fraud proofs — the sequencer is trusted in v0, and this README's trust model section says exactly what that means.
 
 ## Try it
