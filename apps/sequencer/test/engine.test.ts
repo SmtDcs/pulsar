@@ -6,7 +6,8 @@ const B = "GBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBB";
 
 function pulsarEngine() {
   const e = new MatchEngine();
-  e.createPulsar("1", "1", A, B, 60);
+  e.createPulsar("1", A, B, 60);
+  e.attachSession("1", "1", "tx-open");
   return e;
 }
 
@@ -123,6 +124,55 @@ describe("MatchEngine — win / draw / settle", () => {
     // payload bytes unchanged after settle
     void result;
     void stateHash;
+  });
+});
+
+describe("MatchEngine — v1 periodic commits", () => {
+  it("commits every N moves with strictly increasing nonces", () => {
+    const e = pulsarEngine();
+    e.applyMove("1", A, 0);
+    e.applyMove("1", B, 1);
+    expect(e.commitDue("1", 3)).toBe(false); // moveCount 2
+    e.applyMove("1", A, 2);
+    expect(e.commitDue("1", 3)).toBe(true); // moveCount 3
+    const p1 = e.commitPayload("1");
+    expect(p1.nonce).toBe(1);
+    e.markCommitSubmitted("1");
+    expect(e.commitDue("1", 3)).toBe(false); // in-flight
+    const st = e.commitPayload("1").stateHash;
+    e.markCommitConfirmed("1", "tx-c1", Array.from(st, (b) => b.toString(16).padStart(2, "0")).join(""));
+    expect(e.get("1").commitsCount).toBe(1);
+
+    e.applyMove("1", B, 5);
+    e.applyMove("1", A, 6);
+    e.applyMove("1", B, 7);
+    expect(e.commitDue("1", 3)).toBe(true); // moveCount 6
+    const p2 = e.commitPayload("1");
+    expect(p2.nonce).toBe(2);
+  });
+
+  it("does not commit after the game is won or settled", () => {
+    const e = pulsarEngine();
+    for (const [p, c] of [
+      [A, 0], [B, 3], [A, 1], [B, 4], [A, 2],
+    ] as const) {
+      e.applyMove("1", p, c); // A wins on move 5
+    }
+    expect(e.get("1").winner).toBe(1);
+    expect(e.commitDue("1", 3)).toBe(false); // game over
+    e.markSettled("1", "tx-s", "00", "aa");
+    expect(e.get("1").status).toBe("settled");
+    expect(e.commitDue("1", 3)).toBe(false); // settled
+  });
+
+  it("does not commit when the session is not attached yet", () => {
+    const e = new MatchEngine();
+    e.createPulsar("2", A, B, 60);
+    e.applyMove("2", A, 0);
+    e.applyMove("2", B, 1);
+    e.applyMove("2", A, 2);
+    expect(e.commitDue("2", 3)).toBe(true);
+    expect(() => e.commitPayload("2")).toThrowError(/session not attached/);
   });
 });
 

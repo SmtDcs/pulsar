@@ -1,6 +1,8 @@
 #!/usr/bin/env bash
-# Fund the 3 demo accounts (PLAYER_A, PLAYER_B, OPERATOR) via Friendbot.
+# Fund the sequencer operator account via Friendbot (v2).
 # Stellar Testnet only. Safe to re-run: already-funded accounts just error.
+# Note: player accounts are browser-generated and funded on demand via
+# GET /fund on the sequencer (or POST /fund in the web UI) — never here.
 set -euo pipefail
 cd "$(dirname "$0")/.."
 
@@ -12,7 +14,7 @@ fi
 # shellcheck disable=SC1091
 source .env
 
-for var in PLAYER_A_PUBLIC PLAYER_B_PUBLIC OPERATOR_PUBLIC; do
+for var in OPERATOR_PUBLIC; do
   addr="${!var}"
   if [ -z "$addr" ] || [ "$addr" = "G..." ]; then
     echo "$var is not set in .env"
@@ -31,4 +33,4 @@ for var in PLAYER_A_PUBLIC PLAYER_B_PUBLIC OPERATOR_PUBLIC; do
     exit 1
   fi
 done
-echo "All demo accounts funded."
+echo "Operator account funded (if empty, it was already funded)."

@@ -22,9 +22,9 @@ export type MatchStatus = "open" | "settled" | "closed";
 export interface Match {
   matchId: string;
   mode: Mode;
-  /** SessionRegistry session id (Pulsar) — decimal string in URLs. */
+  /** SessionRegistry session id (Pulsar) — attached by the player's browser. */
   sessionId?: string;
-  /** SlowTicTacToe game id (L1). */
+  /** SlowTicTacToe game id (L1) — attached by the player's browser. */
   gameId?: string;
   playerA: string;
   playerB: string;
@@ -39,17 +39,23 @@ export interface Match {
   resultHex?: string;
   stateHashHex?: string;
   settleTxHash?: string;
+  /** v1: number of on-chain `commit` txs submitted for this session. */
+  commitsCount: number;
+  /** Set while a commit tx is being submitted (serialized chain queue). */
+  commitInFlight: boolean;
+  lastCommitTxHash?: string;
+  lastCommitStateHashHex?: string;
+  lastCommittedMoveCount?: number;
   createdAt: number;
 }
 
 export class MatchEngine {
   private matches = new Map<string, Match>();
 
-  createPulsar(matchId: string, sessionId: string, playerA: string, playerB: string, timeoutLedgers: number): Match {
+  createPulsar(matchId: string, playerA: string, playerB: string, timeoutLedgers: number): Match {
     const m: Match = {
       matchId,
       mode: "pulsar",
-      sessionId,
       playerA,
       playerB,
       board: emptyBoard(),
@@ -60,6 +66,8 @@ export class MatchEngine {
       lastMoveMs: null,
       txHashes: [],
       timeoutLedgers,
+      commitsCount: 0,
+      commitInFlight: false,
       createdAt: Date.now(),
     };
     this.matches.set(matchId, m);
@@ -79,9 +87,20 @@ export class MatchEngine {
       status: "open",
       lastMoveMs: null,
       txHashes: [],
+      commitsCount: 0,
+      commitInFlight: false,
       createdAt: Date.now(),
     };
     this.matches.set(matchId, m);
+    return m;
+  }
+
+  attachSession(matchId: string, sessionId: string, txHash?: string): Match {
+    const m = this.get(matchId);
+    if (m.mode !== "pulsar") throw new Error("not a Pulsar match");
+    if (m.sessionId) throw new Error(`session already attached: ${m.sessionId}`);
+    m.sessionId = sessionId;
+    if (txHash && !m.txHashes.includes(txHash)) m.txHashes.push(txHash);
     return m;
   }
 
@@ -118,6 +137,54 @@ export class MatchEngine {
     m.moveCount += 1;
     m.winner = winnerOf(m.board);
     m.next = m.next === 1 ? 2 : 1;
+    return m;
+  }
+
+  /**
+   * v1: after every `everyN` moves, the sequencer pins the current state
+   * hash on-chain via `SessionRegistry.commit`. Nonce is strictly
+   * increasing (commit #1 uses contract nonce 1, etc.).
+   */
+  commitDue(matchId: string, everyN: number): boolean {
+    const m = this.get(matchId);
+    if (m.mode !== "pulsar" || m.status !== "open" || m.winner !== 0) return false;
+    if (m.moveCount <= 0 || m.moveCount % everyN !== 0) return false;
+    if (m.commitInFlight) return false;
+    // Never re-commit the same move count twice.
+    return m.lastCommittedMoveCount == null || m.lastCommittedMoveCount < m.moveCount;
+  }
+
+  /** Build the commit payload: nonce + sha256 over the current board snapshot. */
+  commitPayload(matchId: string): { nonce: number; stateHash: Uint8Array } {
+    const m = this.get(matchId);
+    if (m.mode !== "pulsar") throw new Error("not a Pulsar match");
+    if (!m.sessionId) throw new Error("session not attached yet");
+    const nonce = m.commitsCount + 1;
+    const snapshot = encodeResult(0, m.board, m.moveCount); // winner byte 0 = in progress
+    return { nonce, stateHash: stateHash(snapshot) };
+  }
+
+  /** Mark a commit tx as submitted (and later confirmed on-chain). */
+  markCommitSubmitted(matchId: string): Match {
+    const m = this.get(matchId);
+    m.commitInFlight = true;
+    return m;
+  }
+
+  markCommitConfirmed(matchId: string, txHash: string, stateHashHex: string): Match {
+    const m = this.get(matchId);
+    m.commitsCount += 1;
+    m.commitInFlight = false;
+    m.lastCommittedMoveCount = m.moveCount;
+    m.lastCommitTxHash = txHash;
+    m.lastCommitStateHashHex = stateHashHex;
+    if (!m.txHashes.includes(txHash)) m.txHashes.push(txHash);
+    return m;
+  }
+
+  markCommitFailed(matchId: string): Match {
+    const m = this.get(matchId);
+    m.commitInFlight = false;
     return m;
   }
 

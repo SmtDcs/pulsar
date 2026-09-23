@@ -35,11 +35,10 @@ export const config = {
   horizonUrl:
     process.env.HORIZON_URL ?? "https://horizon-testnet.stellar.org",
   operatorSecret: required("OPERATOR_SECRET"),
+  operatorPublic: process.env.OPERATOR_PUBLIC ?? "",
   sessionRegistryId: required("SESSION_REGISTRY_ID"),
   slowTicTacToeId: process.env.SLOW_TICTACTOE_ID ?? "",
-  playerASecret: process.env.PLAYER_A_SECRET ?? "",
-  playerBSecret: process.env.PLAYER_B_SECRET ?? "",
-  playerAPublic: process.env.PLAYER_A_PUBLIC ?? "",
-  playerBPublic: process.env.PLAYER_B_PUBLIC ?? "",
   defaultTimeoutLedgers: Number(process.env.DEFAULT_TIMEOUT_LEDGERS ?? 300),
+  /** v1: submit one SessionRegistry.commit tx every N Pulsar moves. */
+  commitEveryMoves: Number(process.env.COMMIT_EVERY_MOVES ?? 3),
 };

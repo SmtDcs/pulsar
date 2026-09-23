@@ -95,10 +95,6 @@ stellar contract invoke --id "$SLOW_TICTACTOE_ID" --source-account "$SOURCE" \
 # --- web env -------------------------------------------------------------------
 cat > apps/web/.env.local <<EOF
 NEXT_PUBLIC_SEQUENCER_URL=http://localhost:8787
-NEXT_PUBLIC_PLAYER_A_PUBLIC=$PLAYER_A_PUBLIC
-NEXT_PUBLIC_PLAYER_B_PUBLIC=$PLAYER_B_PUBLIC
-NEXT_PUBLIC_SESSION_REGISTRY_ID=$SESSION_REGISTRY_ID
-NEXT_PUBLIC_SLOW_TICTACTOE_ID=$SLOW_TICTACTOE_ID
 EOF
 
 # --- TypeScript bindings -------------------------------------------------------

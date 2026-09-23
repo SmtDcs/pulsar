@@ -1,10 +1,10 @@
 #!/usr/bin/env node
 /**
- * Generate 3 fresh Stellar keypairs (player A, player B, operator) into .env.
+ * Generate ONE fresh Stellar operator keypair into .env (v2).
  * Only runs when .env does not exist — never overwrites, never commits.
  *
- * Stellar TESTNET only. These are demo keys: the sequencer holds the
- * player secrets for the local demo. Do not use real funds.
+ * Stellar TESTNET only. In v2 the sequencer holds ONLY the operator key;
+ * player keys are generated per-browser (localStorage) and never stored here.
  */
 import { Keypair } from "@stellar/stellar-sdk";
 import { existsSync, readFileSync, writeFileSync } from "node:fs";
@@ -22,8 +22,6 @@ if (existsSync(envPath)) {
 const template = readFileSync(path.join(root, ".env.example"), "utf8");
 
 const keys = {
-  PLAYER_A: Keypair.random(),
-  PLAYER_B: Keypair.random(),
   OPERATOR: Keypair.random(),
 };
 
@@ -36,8 +34,8 @@ for (const [name, kp] of Object.entries(keys)) {
 }
 
 writeFileSync(envPath, out, { mode: 0o600 });
-console.log("Generated 3 Testnet keypairs in .env (kept secret, git-ignored):");
+console.log("Generated the Testnet operator keypair in .env (kept secret, git-ignored):");
 for (const [name, kp] of Object.entries(keys)) {
   console.log(`  ${name.padEnd(9)} ${kp.publicKey()}`);
 }
-console.log("Fund them next: ./scripts/fund.sh");
+console.log("Fund it next: ./scripts/fund.sh");

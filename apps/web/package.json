@@ -10,6 +10,8 @@
   },
   "dependencies": {
     "@pulsar/shared": "workspace:*",
+    "@pulsar/session-registry-bindings": "workspace:*",
+    "@pulsar/slow-tictactoe-bindings": "workspace:*",
     "next": "^15.3.0",
     "react": "^19.1.0",
     "react-dom": "^19.1.0"

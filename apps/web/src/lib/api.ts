@@ -8,10 +8,13 @@ export type MatchStatus = "open" | "settled" | "closed";
 export interface HealthInfo {
   ok: boolean;
   ledger: number | null;
-  playerA: string;
-  playerB: string;
+  rpcUrl: string;
+  networkPassphrase: string;
+  horizonUrl: string;
   sessionRegistryId: string;
   slowTicTacToeId: string | null;
+  commitEveryMoves: number;
+  defaultTimeoutLedgers: number;
 }
 
 export interface MatchInfo {
@@ -32,6 +35,10 @@ export interface MatchInfo {
   resultHex: string | null;
   stateHashHex: string | null;
   timeoutLedgers: number | null;
+  commitsCount: number;
+  commitInFlight: boolean;
+  lastCommitTxHash: string | null;
+  lastCommitStateHashHex: string | null;
 }
 
 export interface MoveResult {
@@ -76,19 +83,34 @@ export async function createMatch(body: {
   return json as MatchInfo;
 }
 
-export async function createL1Game(
+export async function attachMatch(
   id: string,
-  playerA: string,
-  playerB: string,
-): Promise<{ matchId: string; gameId: string; txHash: string }> {
-  const res = await fetch(`${SEQUENCER_URL}/matches/${encodeURIComponent(id)}/l1/create`, {
+  sessionId: string,
+  txHash?: string,
+): Promise<MatchInfo> {
+  const res = await fetch(`${SEQUENCER_URL}/matches/${encodeURIComponent(id)}/attach`, {
     method: "POST",
     headers: { "content-type": "application/json" },
-    body: JSON.stringify({ playerA, playerB }),
+    body: JSON.stringify({ sessionId, txHash }),
   });
   const json = await res.json().catch(() => ({}));
-  if (!res.ok) throw new Error(json.error ?? `L1 create failed (${res.status})`);
-  return json;
+  if (!res.ok) throw new Error(json.error ?? `attach failed (${res.status})`);
+  return json as MatchInfo;
+}
+
+export async function attachL1(
+  id: string,
+  gameId: string,
+  txHash?: string,
+): Promise<MatchInfo> {
+  const res = await fetch(`${SEQUENCER_URL}/matches/${encodeURIComponent(id)}/l1/attach`, {
+    method: "POST",
+    headers: { "content-type": "application/json" },
+    body: JSON.stringify({ gameId, txHash }),
+  });
+  const json = await res.json().catch(() => ({}));
+  if (!res.ok) throw new Error(json.error ?? `L1 attach failed (${res.status})`);
+  return json as MatchInfo;
 }
 
 export async function pulsarMove(
@@ -106,19 +128,19 @@ export async function pulsarMove(
   return json;
 }
 
-export async function l1Move(
+export async function closeMatch(
   id: string,
-  player: string,
-  cell: number,
-): Promise<MoveResult> {
-  const res = await fetch(`${SEQUENCER_URL}/matches/${encodeURIComponent(id)}/l1/move`, {
+  caller: string,
+  txHash?: string,
+): Promise<MatchInfo> {
+  const res = await fetch(`${SEQUENCER_URL}/matches/${encodeURIComponent(id)}/close`, {
     method: "POST",
     headers: { "content-type": "application/json" },
-    body: JSON.stringify({ player, cell }),
+    body: JSON.stringify({ caller, txHash }),
   });
   const json = await res.json().catch(() => ({}));
-  if (!res.ok) throw new Error(json.error ?? `L1 move failed (${res.status})`);
-  return json;
+  if (!res.ok) throw new Error(json.error ?? `close failed (${res.status})`);
+  return json as MatchInfo;
 }
 
 export async function settleMatch(id: string): Promise<{

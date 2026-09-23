@@ -57,9 +57,15 @@ importers:
 
   apps/web:
     dependencies:
+      '@pulsar/session-registry-bindings':
+        specifier: workspace:*
+        version: link:../../packages/bindings/session-registry
       '@pulsar/shared':
         specifier: workspace:*
         version: link:../../packages/shared
+      '@pulsar/slow-tictactoe-bindings':
+        specifier: workspace:*
+        version: link:../../packages/bindings/slow-tictactoe
       next:
         specifier: ^15.3.0
         version: 15.5.23(react-dom@19.2.8(react@19.2.8))(react@19.2.8)

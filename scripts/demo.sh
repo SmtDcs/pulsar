@@ -12,7 +12,7 @@ echo "==> Installing dependencies..."
 pnpm install
 
 if [ ! -f .env ]; then
-  echo "==> No .env found — generating 3 Testnet keypairs..."
+  echo "==> No .env found — generating the operator keypair..."
   node scripts/gen-keys.mjs
 fi
 
@@ -75,14 +75,15 @@ done
 
 echo ""
 echo "=============================================================="
-echo "  Pulsar v0 demo is running:"
+echo "  Pulsar demo is running (v2 — browser-signed player keys):"
 echo "    Web UI:       http://localhost:$WEB_PORT"
 echo "    Sequencer:    http://localhost:${PORT:-8787}"
 echo "    Explorer:     https://stellar.expert/explorer/testnet"
 echo ""
 echo "  Open two browser tabs at http://localhost:$WEB_PORT —"
-echo "  create a match in tab 1 (play as A), open the same /m/... URL"
-echo "  in tab 2 (play as B). Toggle L1 vs Pulsar at match creation."
+echo "  create a match in tab 1, open the same /m/... URL in tab 2."
+echo "  Each browser generates its own player key (localStorage) and"
+echo "  signs its own on-chain ops; the sequencer holds no player secrets."
 echo "=============================================================="
 echo "Ctrl-C to stop."
 
